@@ -1,6 +1,6 @@
 <!-- DEVELOPMENT GUID START -->
 
-- Read `CONTEXT.md` before working on this codebase. It fixes the domain language.
+- Read `DOMAIN.md` before working on this codebase. It fixes the domain language.
 - To have a consistent typography please use Text component from '#ui' package.
 - Use `react-hook-form` for form management.
 - Use `valibot` for client side schema validation.
