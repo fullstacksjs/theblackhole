@@ -76,6 +76,9 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
+  optimizeDeps: {
+    include: ["@base-ui/react/slider", "cn/config"],
+  },
   lint: defineOxlintConfig({
     ignorePatterns,
     jsPlugins: [

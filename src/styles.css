@@ -1,10 +1,72 @@
 @import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
 @import "./lib/styles/variants.css";
 
 :root {
   interpolate-size: allow-keywords;
   color-scheme: dark;
+  --background: #0a0a0a;
+  --foreground: #fafafa;
+  --panel: rgb(12 12 12 / 92%);
+  --input: #050505;
+  --border: #333333;
+  --divider: #1f1f1f;
+  --muted-foreground: #a3a3a3;
+  --subtle-foreground: #808080;
+  --primary-hover: #d4d4d4;
+  --faint: #4a4a4a;
+}
+
+@utility light-palette {
+  color-scheme: light;
+  --background: #fafafa;
+  --foreground: #0a0a0a;
+  --panel: rgb(255 255 255 / 92%);
+  --input: #ffffff;
+  --border: #b3b3b3;
+  --divider: #e5e5e5;
+  --muted-foreground: #525252;
+  --subtle-foreground: #686868;
+  --primary-hover: #333333;
+  --faint: #b3b3b3;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    @apply light-palette;
+  }
+}
+
+:root[data-theme="light"] {
+  @apply light-palette;
 }
 
 @theme inline {
+  --font-sans: "Inter Variable", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-panel: var(--panel);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-divider: var(--divider);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-faint: var(--faint);
+  --text-caption: 0.78125rem;
+  --text-caption--line-height: 1.5;
+  --text-label: 0.65625rem;
+  --text-label--line-height: 1.5;
+  --text-body: 0.9375rem;
+  --text-body--line-height: 1.55;
+  --text-title: 1.375rem;
+  --text-title--line-height: 1.15;
+}
+
+@layer base {
+  body {
+    @apply m-0 bg-background font-sans text-foreground antialiased;
+  }
 }

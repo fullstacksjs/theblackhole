@@ -2,7 +2,7 @@ import { defineConfig } from "cspell";
 
 export default defineConfig({
   version: "0.2",
-  words: ["vite", "chromaui", "voidzero", "fullstacksjs", "ASafaeirad"],
+  words: ["vite", "chromaui", "voidzero", "fullstacksjs", "ASafaeirad", "fontsource"],
   ignorePaths: [
     "node_modules",
     "*.svg",

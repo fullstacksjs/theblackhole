@@ -4,7 +4,6 @@ import { useConvexAuth } from "convex/react";
 import { useEffect } from "react";
 import ReactDOM from "react-dom/client";
 
-import { config } from "#lib/config.ts";
 import { ConvexAuthProvider } from "#lib/convex/ConvexAuthProvider.tsx";
 import { Text } from "#ui";
 
@@ -41,7 +40,7 @@ function RouterWithAuth() {
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center bg-background">
-        <Text size="sm" tone="muted">
+        <Text variant="caption" tone="muted">
           Loading…
         </Text>
       </div>
