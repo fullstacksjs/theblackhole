@@ -1,7 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useConvexAuth, useQuery } from "convex/react";
-
-import { api } from "#convex/_generated/api";
+import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/sign-in")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -11,10 +8,5 @@ export const Route = createFileRoute("/sign-in")({
 });
 
 function SignInPage() {
-  const { redirectTo } = Route.useSearch();
-  const navigate = useNavigate();
-  const { isAuthenticated } = useConvexAuth();
-  const user = useQuery(api.users.current);
-
-  return <div className=""></div>;
+  return <div className="" />;
 }

@@ -1,0 +1,33 @@
+@layer components {
+  .ui-toast-viewport {
+    position: fixed;
+    z-index: 50;
+    top: 6.875rem;
+    left: 50%;
+    display: flex;
+    width: min(26rem, calc(100% - 2rem));
+    flex-direction: column;
+    gap: 0.5rem;
+    transform: translateX(-50%);
+    outline: none;
+  }
+
+  .ui-toast {
+    transition: opacity 0.2s;
+  }
+
+  .ui-toast[data-starting-style],
+  .ui-toast[data-ending-style] {
+    opacity: 0;
+  }
+
+  .ui-toast[data-limited] {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ui-toast {
+      transition: none;
+    }
+  }
+}
