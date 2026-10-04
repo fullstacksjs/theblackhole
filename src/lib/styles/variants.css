@@ -1,0 +1,52 @@
+/* ── State variants ─────────────────────────────────────────────
+ * Prefer these over raw attribute selectors so state styling reads the same
+ * whether it comes from Base UI (`data-*`) or from ARIA (`aria-*`).
+ */
+
+@custom-variant data-open {
+  &:where([data-state="open"]),
+  &:where([data-open]:not([data-open="false"])) {
+    @slot;
+  }
+}
+
+@custom-variant data-closed {
+  &:where([data-state="closed"]),
+  &:where([data-closed]:not([data-closed="false"])) {
+    @slot;
+  }
+}
+
+@custom-variant data-selected {
+  &:where([data-selected]:not([data-selected="false"])),
+  &:where([aria-selected="true"]) {
+    @slot;
+  }
+}
+
+@custom-variant data-pressed {
+  &:where([data-pressed]:not([data-pressed="false"])),
+  &:where([aria-pressed="true"]) {
+    @slot;
+  }
+}
+
+@custom-variant data-current {
+  &:where([aria-current]:not([aria-current="false"])) {
+    @slot;
+  }
+}
+
+@custom-variant data-disabled {
+  &:where([data-disabled]:not([data-disabled="false"])),
+  &:where([aria-disabled="true"]) {
+    @slot;
+  }
+}
+
+@custom-variant data-invalid {
+  &:where([data-invalid]:not([data-invalid="false"])),
+  &:where([aria-invalid="true"]) {
+    @slot;
+  }
+}

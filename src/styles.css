@@ -1,0 +1,10 @@
+@import "tailwindcss";
+@import "./lib/styles/variants.css";
+
+:root {
+  interpolate-size: allow-keywords;
+  color-scheme: dark;
+}
+
+@theme inline {
+}

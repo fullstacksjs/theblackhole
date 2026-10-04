@@ -1,0 +1,71 @@
+import "./styles.css";
+import { RouterProvider, createRouter } from "@tanstack/react-router";
+import { useConvexAuth } from "convex/react";
+import { useEffect } from "react";
+import ReactDOM from "react-dom/client";
+
+import { config } from "#lib/config.ts";
+import { ConvexAuthProvider } from "#lib/convex/ConvexAuthProvider.tsx";
+import { Text } from "#ui";
+
+import type { RouterContext } from "./router-context";
+
+import { routeTree } from "./routeTree.gen";
+
+const router = createRouter({
+  routeTree,
+  defaultPreload: "intent",
+  defaultStaleTime: 5000,
+  scrollRestoration: true,
+  context: {
+    auth: {
+      isAuthenticated: false,
+      isLoading: true,
+    },
+  } satisfies RouterContext,
+});
+
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: typeof router;
+  }
+}
+
+function RouterWithAuth() {
+  const { isAuthenticated, isLoading } = useConvexAuth();
+
+  useEffect(() => {
+    void router.invalidate();
+  }, [isAuthenticated, isLoading]);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center bg-background">
+        <Text size="sm" tone="muted">
+          Loading…
+        </Text>
+      </div>
+    );
+  }
+
+  return <RouterProvider router={router} context={{ auth: { isAuthenticated, isLoading } }} />;
+}
+
+const rootElement = document.getElementById("app")!;
+
+if (!rootElement.innerHTML) {
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(
+    <ConvexAuthProvider>
+      <RouterWithAuth />
+    </ConvexAuthProvider>,
+  );
+}
+
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    void navigator.serviceWorker.register("/sw.js").catch((error: unknown) => {
+      console.warn("Service worker registration failed", error);
+    });
+  });
+}

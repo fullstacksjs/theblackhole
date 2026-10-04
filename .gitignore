@@ -1,0 +1,54 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Storybook
+*storybook.log
+storybook-static
+
+# Typescript
+tsconfig.tsbuildinfo
+
+# Packages
+.tanstack
+
+## Docs
+docs/specs
+
+# design-sync
+.design-sync/sb-reference/
+.design-sync/learnings/
+.design-sync/.cache/
+.design-sync/node_modules
+.design-sync/sb-build.log
+.ds-sync/
+ds-bundle/
+/index.d.ts
+dist/types/
+.vitest/
+
