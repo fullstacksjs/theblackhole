@@ -1,0 +1,32 @@
+{
+  "projectId": "36a7f79c-7164-4c38-a12e-baedc26ee529",
+  "shape": "storybook",
+  "pkg": "theblackhole",
+  "globalName": "BlackHoleUI",
+  "storybookConfigDir": ".storybook",
+  "storybookStatic": ".design-sync/sb-reference",
+  "entry": "dist/ui/index.js",
+  "buildCmd": ".design-sync/ui-build/build.sh",
+  "cssEntry": "dist/ui/index.css",
+  "titleMap": {
+    "Map": null,
+    "Mapcounts": null,
+    "Mapsettings": null,
+    "Planetpanel": null,
+    "Planetstatusindicator": null,
+    "Statusindicator": "StatusIndicator",
+    "Toast": "ToastProvider"
+  },
+  "guidelinesGlob": [
+    "src/ui/README.md"
+  ],
+  "storyImports": {
+    "shim": [
+      "src/ui/index.ts"
+    ]
+  },
+  "libOverrides": {
+    "story-imports.mjs": "Stories are CSF Next: redirect .storybook/preview to .design-sync/storybook-preview-shim.ts"
+  },
+  "readmeHeader": ".design-sync/conventions.md"
+}

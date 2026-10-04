@@ -1,0 +1,12 @@
+/* design-sync stylesheet: the app's global stylesheet plus the utilities the
+ * design agent may use for layout glue around #ui components. Tailwind only
+ * emits classes it finds in source, and designs are not source, so the
+ * theme-token vocabulary is listed here explicitly. */
+@import "../../src/styles.css";
+
+@source inline("{bg,text,border,divide,outline,ring,fill,stroke}-{background,foreground,panel,input,border,divider,muted-foreground,subtle-foreground,primary-hover,faint}");
+@source inline("text-{caption,label,body,title} font-{sans,mono} font-{normal,medium,semibold} tracking-{tight,wide,wider,widest} uppercase tabular-nums antialiased");
+@source inline("{flex,inline-flex,grid,block,inline-block,hidden,contents} flex-{row,col,wrap,1} items-{start,center,end,stretch,baseline} justify-{start,center,end,between} self-{start,center,end}");
+@source inline("{gap,gap-x,gap-y,p,px,py,pt,pb,pl,pr,m,mx,my,mt,mb,space-y,space-x}-{0,1,2,3,4,5,6,8,10,12,16,20,24}");
+@source inline("{w,h,min-w,min-h,max-w}-{full,screen,fit,auto} max-w-{xs,sm,md,lg,xl,2xl,3xl} grid-cols-{1,2,3,4,6,12} col-span-{1,2,3,4,6,12}");
+@source inline("relative absolute fixed sticky inset-0 top-0 right-0 bottom-0 left-0 z-{0,10,20,50} overflow-{hidden,auto} border border-{t,b,l,r} rounded{,-none,-sm,-md,-full} backdrop-blur-sm opacity-{50,70} truncate");
