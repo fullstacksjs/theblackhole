@@ -16,9 +16,6 @@ export type PlanetStatusIndicatorProps = Omit<
   status: PlanetStatus;
 };
 
-export function PlanetStatusIndicator({
-  status,
-  ...props
-}: PlanetStatusIndicatorProps) {
+export function PlanetStatusIndicator({ status, ...props }: PlanetStatusIndicatorProps) {
   return <StatusIndicator {...props} {...statuses[status]} />;
 }
