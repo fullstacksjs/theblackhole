@@ -20,6 +20,8 @@ async function arrived(canvas: ReturnType<typeof within>) {
   const replication = canvas.getByRole("button", { name: "Replication, Charted" });
   await waitFor(() => expect(replication.parentElement).not.toHaveAttribute("inert"), {
     timeout: 5000,
+    // WebGL positions labels every frame; only the arrival gate matters here.
+    mutationObserverOptions: { attributes: true, attributeFilter: ["inert"] },
   });
   await expect(replication).toBeVisible();
 }
@@ -44,12 +46,12 @@ export const SelectPlanet = meta.story({
   play: async ({ canvas, userEvent }) => {
     await arrived(canvas);
     await userEvent.click(canvas.getByRole("button", { name: "Replication, Charted" }));
-    const panel = canvas.getByRole("region", { name: "Replication" });
+    const panel = await canvas.findByRole("region", { name: "Replication" });
     await expect(panel).toHaveTextContent("Linked to The Craft");
     await expect(panel).toHaveTextContent("Keeping copies of data on several machines");
 
     await userEvent.click(canvas.getByRole("button", { name: "Idempotency, In reach" }));
-    const reach = canvas.getByRole("region", { name: "Idempotency" });
+    const reach = await canvas.findByRole("region", { name: "Idempotency" });
     await expect(reach).toHaveTextContent("In reach via Replication");
     await expect(reach).not.toHaveTextContent("retries safe");
 

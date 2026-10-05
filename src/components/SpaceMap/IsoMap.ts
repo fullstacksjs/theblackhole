@@ -859,14 +859,19 @@ export class IsoMap {
         return;
       }
       p.labelShown = true;
-      p.label.style.opacity = op.toFixed(3);
+      // Avoid DOM mutations on every frame when reduced motion holds the map still.
+      const opacity = String(Number(op.toFixed(3)));
+      if (p.label.style.opacity !== opacity) p.label.style.opacity = opacity;
       const y = o.y + o.r * (p.hole ? 1.4 : 1.15) + 8;
-      p.label.style.transform = `translate(${o.x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, 0)`;
+      const transform = `translate(${Number(o.x.toFixed(1))}px, ${Number(y.toFixed(1))}px) translate(-50%, 0px)`;
+      if (p.label.style.transform !== transform) p.label.style.transform = transform;
     });
     this.sectorPoints.forEach((point, i) => {
       const label = this.sectorLabels[i];
-      if (label && this.project(point, o))
-        label.style.transform = `translate(${o.x.toFixed(1)}px, ${o.y.toFixed(1)}px) translate(-50%, -50%)`;
+      if (label && this.project(point, o)) {
+        const transform = `translate(${Number(o.x.toFixed(1))}px, ${Number(o.y.toFixed(1))}px) translate(-50%, -50%)`;
+        if (label.style.transform !== transform) label.style.transform = transform;
+      }
     });
   }
 }
