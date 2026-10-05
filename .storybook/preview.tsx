@@ -10,10 +10,6 @@ sb.mock(import("@convex-dev/auth/react"));
 // snapshot would catch the cursor at a random point in its cycle. Freeze it on the lit frame
 // so diffs stay about the design rather than the timing.
 if (isChromatic()) {
-  const style = document.createElement("style");
-  style.textContent = ".animate-blink { animation: none; opacity: 1; }";
-  document.head.append(style);
-
   // Chromatic cannot pause JavaScript animation, and the space map animates in WebGL. Report
   // reduced motion so the map holds still and every snapshot catches the same frame.
   const matchMedia = window.matchMedia.bind(window);
@@ -83,7 +79,10 @@ export default definePreview({
               boldValue: 700,
               boldTextPt: 14,
               largeTextPt: 18,
-              contrastRatio: { normal: { expected: 4 }, large: { expected: 3 } },
+              contrastRatio: {
+                normal: { expected: 4 },
+                large: { expected: 3 },
+              },
               pseudoSizeThreshold: 0.25,
               shadowOutlineEmMax: 0.2,
               textStrokeEmMin: 0.03,
