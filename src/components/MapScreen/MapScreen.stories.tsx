@@ -1,4 +1,4 @@
-import { expect, within } from "storybook/test";
+import { expect, waitFor, within } from "storybook/test";
 
 import preview from "#storybook/preview";
 
@@ -12,8 +12,28 @@ const meta = preview.meta({
   args: mockMap,
 });
 
+/**
+ * Every load reveals the map out of the fog, and planets stay out of reach until the reveal has
+ * swept past them. Under reduced motion the map appears at once.
+ */
+async function arrived(canvas: ReturnType<typeof within>) {
+  const replication = canvas.getByRole("button", { name: "Replication, Charted" });
+  await waitFor(
+    async () => {
+      await expect(replication.parentElement).not.toHaveAttribute("inert");
+      await expect(replication).toBeVisible();
+    },
+    {
+      timeout: 5000,
+      // WebGL positions labels every frame; poll visibility without observing those writes.
+      mutationObserverOptions: { attributes: true, attributeFilter: ["inert"] },
+    },
+  );
+}
+
 export const MockMap = meta.story({
   play: async ({ canvas }) => {
+    await arrived(canvas);
     const countOf = (label: string) => within(canvas.getByText(label).closest("div")!);
     await expect(countOf("Charted").getByText("1")).toBeVisible();
     await expect(countOf("In reach").getByText("1")).toBeVisible();
@@ -28,14 +48,24 @@ export const MockMap = meta.story({
 });
 
 export const SelectPlanet = meta.story({
+  beforeEach: () => {
+    // Selection tests the settled map; MockMap covers the animated arrival.
+    const { matchMedia } = window;
+    window.matchMedia = (query) =>
+      matchMedia.call(window, query.replace("(prefers-reduced-motion: reduce)", "all"));
+    return () => {
+      window.matchMedia = matchMedia;
+    };
+  },
   play: async ({ canvas, userEvent }) => {
+    await arrived(canvas);
     await userEvent.click(canvas.getByRole("button", { name: "Replication, Charted" }));
-    const panel = canvas.getByRole("region", { name: "Replication" });
+    const panel = await canvas.findByRole("region", { name: "Replication" });
     await expect(panel).toHaveTextContent("Linked to The Craft");
     await expect(panel).toHaveTextContent("Keeping copies of data on several machines");
 
     await userEvent.click(canvas.getByRole("button", { name: "Idempotency, In reach" }));
-    const reach = canvas.getByRole("region", { name: "Idempotency" });
+    const reach = await canvas.findByRole("region", { name: "Idempotency" });
     await expect(reach).toHaveTextContent("In reach via Replication");
     await expect(reach).not.toHaveTextContent("retries safe");
 

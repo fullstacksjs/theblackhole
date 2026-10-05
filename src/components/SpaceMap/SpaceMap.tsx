@@ -1,10 +1,12 @@
+import "./SpaceMap.css";
 import { cn } from "cn";
-import { useEffect, useEffectEvent, useRef } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 import type { Link, PlanetStatus } from "#domain/map.ts";
 
 import { Text } from "#ui";
 
+import { arrive, type ArrivalOverlays } from "./arrival";
 import { IsoMap, type IsoMapPlanet } from "./IsoMap";
 
 export interface SpaceMapPlanet extends IsoMapPlanet {
@@ -50,6 +52,10 @@ export function SpaceMap({
   const mapRef = useRef<IsoMap | null>(null);
   const labels = useRef(new Map<string, HTMLElement>());
   const sectorLabels = useRef(new Map<number, HTMLElement>());
+  const overlays = useRef<ArrivalOverlays>({ flash: null, pulse: null, ring: null, echo: null });
+  // Every load starts fully fogged and reveals the map from The Craft outwards.
+  const [arriving, setArriving] = useState(true);
+  const arrivingRef = useRef(true);
   const pick = useEffectEvent(onPick);
   const sectorCount = sectors.length;
 
@@ -58,12 +64,21 @@ export function SpaceMap({
       planets,
       links,
       sectorCount,
-      onPick: (id) => pick(id),
+      onPick: (id) => {
+        if (!arrivingRef.current) pick(id);
+      },
     });
     for (const [id, el] of labels.current) map.attachLabel(id, el);
     for (const [index, el] of sectorLabels.current) map.attachSectorLabel(index, el);
     mapRef.current = map;
+    const stop = arrivingRef.current
+      ? arrive(map, overlays.current, () => {
+          arrivingRef.current = false;
+          setArriving(false);
+        })
+      : undefined;
     return () => {
+      stop?.();
       mapRef.current = null;
       map.dispose();
     };
@@ -81,7 +96,27 @@ export function SpaceMap({
   return (
     <div className={cn("relative overflow-hidden bg-background", className)}>
       <div ref={stageRef} aria-hidden="true" className="absolute inset-0" />
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      {arriving && (
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div
+            ref={(el) => void (overlays.current.pulse = el)}
+            className="arrival-pulse absolute top-1/2 left-1/2 -translate-1/2 rounded-full opacity-0"
+          />
+          <div
+            ref={(el) => void (overlays.current.flash = el)}
+            className="arrival-flash absolute inset-0 opacity-0"
+          />
+          <div
+            ref={(el) => void (overlays.current.ring = el)}
+            className="arrival-ring absolute top-1/2 left-1/2 -translate-1/2 rounded-full border border-foreground opacity-0"
+          />
+          <div
+            ref={(el) => void (overlays.current.echo = el)}
+            className="arrival-ring absolute top-1/2 left-1/2 -translate-1/2 rounded-full border border-divider opacity-0"
+          />
+        </div>
+      )}
+      <div inert={arriving} className="pointer-events-none absolute inset-0 overflow-hidden">
         {sectors.map((name, index) => (
           <Text
             key={name}
@@ -97,7 +132,10 @@ export function SpaceMap({
             aria-hidden="true"
             variant="label"
             tone="inherit"
-            className="absolute top-0 left-0 whitespace-nowrap text-faint will-change-transform"
+            className={cn(
+              "absolute top-0 left-0 whitespace-nowrap text-faint transition-opacity duration-1000 will-change-transform motion-reduce:transition-none",
+              arriving && "opacity-0",
+            )}
           >
             {name}
           </Text>

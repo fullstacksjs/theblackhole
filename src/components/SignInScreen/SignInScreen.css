@@ -1,0 +1,10 @@
+/* Tailwind's radial gradients cannot take this ellipse shape and position. */
+@layer components {
+  .sign-in-vignette {
+    background: radial-gradient(
+      118% 78% at 50% 48%,
+      transparent 30%,
+      color-mix(in srgb, var(--background) 82%, transparent) 88%
+    );
+  }
+}

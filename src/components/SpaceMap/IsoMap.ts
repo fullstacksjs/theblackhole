@@ -157,7 +157,8 @@ export class IsoMap {
   private readonly reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   private readonly events = new AbortController();
   private readonly P: THREE.Vector3[] = [];
-  private readonly Rad: number[] = [];
+  private readonly baseRad: number[] = [];
+  private Rad: number[] = [];
   private readonly sectorPoints: THREE.Vector3[];
   private readonly sectorLabels: (HTMLElement | null)[];
   private readonly N: PlanetView[];
@@ -166,6 +167,9 @@ export class IsoMap {
   private readonly goal = { target: new THREE.Vector3(), dist: CFG.dist };
   private readonly off = { x: 0, y: 0 };
   private offGoal = { x: 0, y: 0 };
+  private revealR = CFG.revealR;
+  private front = Infinity;
+  private wanted: Record<string, PlanetStatus> = {};
   private fogU!: {
     uN: THREE.IUniform<THREE.Vector3[]>;
     uT: THREE.IUniform<number>;
@@ -184,6 +188,7 @@ export class IsoMap {
   private w = 0;
   private h = 0;
   private raf = 0;
+  private dirty = true;
 
   constructor(el: HTMLElement, options: IsoMapOptions) {
     // The shaders write sRGB greys directly, as the prototype did on three r149.
@@ -222,6 +227,7 @@ export class IsoMap {
   }
 
   attachLabel(id: string, label: HTMLElement | null) {
+    this.dirty = true;
     const p = this.N[this.ix.get(id) ?? -1];
     if (!p) return;
     p.label = label;
@@ -230,14 +236,39 @@ export class IsoMap {
   }
 
   attachSectorLabel(index: number, label: HTMLElement | null) {
+    this.dirty = true;
     if (index < this.sectorLabels.length) this.sectorLabels[index] = label;
   }
 
   setStatus(statuses: Record<string, PlanetStatus>, selectedId: string | null) {
+    this.dirty = true;
+    this.wanted = statuses;
+    this.sel = selectedId == null ? -1 : (this.ix.get(selectedId) ?? -1);
+    this.apply();
+  }
+
+  /**
+   * Keeps every planet farther than `radius` from the centre in the fog. Each one takes on its
+   * status as the front passes it, so a growing front reveals the map from The Craft outwards.
+   */
+  setRevealFront(radius: number) {
+    this.dirty = true;
+    this.front = radius;
+    if (this.st) this.apply();
+  }
+
+  private apply() {
     const first = !this.st;
     const prev = this.st ?? {};
+    const statuses = Number.isFinite(this.front)
+      ? Object.fromEntries(
+          this.ids.map((id, i) => [
+            id,
+            this.P[i].length() <= this.front ? (this.wanted[id] ?? "uncharted") : "uncharted",
+          ]),
+        )
+      : this.wanted;
     this.st = statuses;
-    this.sel = selectedId == null ? -1 : (this.ix.get(selectedId) ?? -1);
     this.N.forEach((p, i) => {
       Object.assign(p.tgt, LOOKS[statuses[this.ids[i]] ?? "uncharted"]);
       if (first) Object.assign(p.vis, p.tgt);
@@ -256,7 +287,35 @@ export class IsoMap {
     }
   }
 
+  /** Scales every planet, with the links docked to them. */
+  setPlanetScale(k: number) {
+    this.dirty = true;
+    this.Rad = this.baseRad.map((r) => r * k);
+    this.N.forEach((p, i) => p.mesh.scale.setScalar(this.Rad[i]));
+    for (const e of this.E) if (e.from >= 0) this.orient(e, e.from);
+  }
+
+  /** Scales how far the fog clears around a known planet. */
+  setRevealScale(k: number) {
+    this.dirty = true;
+    this.revealR = CFG.revealR * k;
+  }
+
+  /** Eases the camera towards a zoom distance, or cuts to it when `instant`. */
+  setZoom(dist: number, { instant = false } = {}) {
+    this.dirty = true;
+    this.goal.dist = dist;
+    if (instant) this.cam.dist = dist;
+  }
+
+  /** Offsets the view in pixels, eased like every other camera move. */
+  shake(x: number, y: number) {
+    this.dirty = true;
+    this.offGoal = { x, y };
+  }
+
   focus(id: string) {
+    this.dirty = true;
     const i = this.ix.get(id);
     if (i == null) return;
     this.goal.target.copy(this.P[i]);
@@ -265,6 +324,7 @@ export class IsoMap {
   }
 
   overview() {
+    this.dirty = true;
     this.goal.target.set(0, 0, 0);
     this.goal.dist = CFG.dist;
     this.offGoal = { x: 0, y: 0 };
@@ -300,10 +360,11 @@ export class IsoMap {
         p.set(Math.cos(ang) * rad, 0, Math.sin(ang) * rad);
       }
       this.P.push(p);
-      this.Rad.push(
+      this.baseRad.push(
         n.tier === 0 ? 0.3 : n.tier === 1 ? 0.17 : n.tier === 4 ? 0.23 : 0.1 + r() * 0.05,
       );
     }
+    this.Rad = [...this.baseRad];
   }
 
   private planets(): PlanetView[] {
@@ -570,7 +631,7 @@ export class IsoMap {
       U.uN.value[i].set(
         this.P[i].x,
         this.P[i].z,
-        p.vis.f > 0.01 ? this.Rad[i] + CFG.revealR * p.vis.f : 0,
+        p.vis.f > 0.01 ? this.Rad[i] + this.revealR * p.vis.f : 0,
       ),
     );
   }
@@ -624,6 +685,13 @@ export class IsoMap {
     const { cv } = this;
     const g = this.goal;
     const opts = { signal: this.events.signal };
+    this.reducedMotion.addEventListener(
+      "change",
+      () => {
+        this.dirty = true;
+      },
+      opts,
+    );
     cv.addEventListener("contextmenu", (e) => e.preventDefault(), opts);
     cv.addEventListener(
       "pointerdown",
@@ -637,6 +705,7 @@ export class IsoMap {
     cv.addEventListener(
       "pointermove",
       (e) => {
+        this.dirty = true;
         const [x, y] = this.local(e);
         const d = this.drag;
         if (d) {
@@ -682,6 +751,7 @@ export class IsoMap {
       "pointerleave",
       () => {
         this.hover = -1;
+        this.dirty = true;
       },
       opts,
     );
@@ -689,6 +759,7 @@ export class IsoMap {
       "wheel",
       (e) => {
         e.preventDefault();
+        this.dirty = true;
         g.dist = Math.max(CFG.dMin, Math.min(CFG.dMax, g.dist * Math.exp(e.deltaY * 0.0012)));
       },
       { ...opts, passive: false },
@@ -706,6 +777,9 @@ export class IsoMap {
     const w = this.el.clientWidth;
     const h = this.el.clientHeight;
     if (!w || !h || !this.st) return;
+    // A settled map needs no repeated WebGL work under reduced motion.
+    if (still && !this.dirty && w === this.w && h === this.h) return;
+    this.dirty = false;
     if (w !== this.w || h !== this.h) {
       this.w = w;
       this.h = h;
@@ -809,14 +883,19 @@ export class IsoMap {
         return;
       }
       p.labelShown = true;
-      p.label.style.opacity = op.toFixed(3);
+      // Avoid DOM mutations on every frame when reduced motion holds the map still.
+      const opacity = String(Number(op.toFixed(3)));
+      if (p.label.style.opacity !== opacity) p.label.style.opacity = opacity;
       const y = o.y + o.r * (p.hole ? 1.4 : 1.15) + 8;
-      p.label.style.transform = `translate(${o.x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, 0)`;
+      const transform = `translate(${Number(o.x.toFixed(1))}px, ${Number(y.toFixed(1))}px) translate(-50%, 0px)`;
+      if (p.label.style.transform !== transform) p.label.style.transform = transform;
     });
     this.sectorPoints.forEach((point, i) => {
       const label = this.sectorLabels[i];
-      if (label && this.project(point, o))
-        label.style.transform = `translate(${o.x.toFixed(1)}px, ${o.y.toFixed(1)}px) translate(-50%, -50%)`;
+      if (label && this.project(point, o)) {
+        const transform = `translate(${Number(o.x.toFixed(1))}px, ${Number(o.y.toFixed(1))}px) translate(-50%, -50%)`;
+        if (label.style.transform !== transform) label.style.transform = transform;
+      }
     });
   }
 }
