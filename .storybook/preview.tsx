@@ -13,6 +13,12 @@ if (isChromatic()) {
   const style = document.createElement("style");
   style.textContent = ".animate-blink { animation: none; opacity: 1; }";
   document.head.append(style);
+
+  // Chromatic cannot pause JavaScript animation, and the space map animates in WebGL. Report
+  // reduced motion so the map holds still and every snapshot catches the same frame.
+  const matchMedia = window.matchMedia.bind(window);
+  window.matchMedia = (query) =>
+    matchMedia(query.replace("(prefers-reduced-motion: reduce)", "all"));
 }
 
 export default definePreview({

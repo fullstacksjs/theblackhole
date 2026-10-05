@@ -154,6 +154,7 @@ export class IsoMap {
   // Every planet is small enough for the coarsest icosphere: 20 flat faces.
   private readonly sphere = new THREE.IcosahedronGeometry(1, 0);
   private readonly projected = new THREE.Vector3();
+  private readonly reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   private readonly events = new AbortController();
   private readonly P: THREE.Vector3[] = [];
   private readonly Rad: number[] = [];
@@ -696,9 +697,12 @@ export class IsoMap {
 
   private readonly tick = (ts: number) => {
     this.raf = requestAnimationFrame(this.tick);
+    const still = this.reducedMotion.matches;
     const dt = Math.min(0.05, (ts - (this.lt || ts)) / 1000);
     this.lt = ts;
-    this.t += dt;
+    // With reduced motion, ambient time stops and every transition lands on its target at once.
+    if (!still) this.t += dt;
+    const step = still ? Infinity : dt;
     const w = this.el.clientWidth;
     const h = this.el.clientHeight;
     if (!w || !h || !this.st) return;
@@ -707,9 +711,9 @@ export class IsoMap {
       this.h = h;
       this.renderer.setSize(w, h, false);
     }
-    this.moveCamera(dt);
-    this.animatePlanets(dt);
-    this.animateTubes(dt);
+    this.moveCamera(step);
+    this.animatePlanets(step);
+    this.animateTubes(step);
     this.placeLabels();
     this.fogTick(w, h);
     this.renderer.render(this.scene, this.camera);
@@ -748,7 +752,7 @@ export class IsoMap {
       const tg = p.tgt;
       for (const key of Object.keys(tg) as (keyof Look)[]) vv[key] += (tg[key] - vv[key]) * kk;
       p.mesh.material.color.setScalar(vv.c);
-      p.mesh.rotation.y += dt * p.spin;
+      p.mesh.rotation.y = this.t * p.spin;
       const on = i === this.sel || i === this.hover;
       const pulse = on ? 1.1 + 0.025 * Math.sin(this.t * 3) : 1;
       if (p.ringMat) p.ringMat.opacity = vv.r * (on ? 1.6 : 1);
