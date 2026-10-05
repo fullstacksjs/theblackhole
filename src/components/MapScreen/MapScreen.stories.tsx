@@ -18,12 +18,17 @@ const meta = preview.meta({
  */
 async function arrived(canvas: ReturnType<typeof within>) {
   const replication = canvas.getByRole("button", { name: "Replication, Charted" });
-  await waitFor(() => expect(replication.parentElement).not.toHaveAttribute("inert"), {
-    timeout: 5000,
-    // WebGL positions labels every frame; only the arrival gate matters here.
-    mutationObserverOptions: { attributes: true, attributeFilter: ["inert"] },
-  });
-  await expect(replication).toBeVisible();
+  await waitFor(
+    async () => {
+      await expect(replication.parentElement).not.toHaveAttribute("inert");
+      await expect(replication).toBeVisible();
+    },
+    {
+      timeout: 5000,
+      // WebGL positions labels every frame; poll visibility without observing those writes.
+      mutationObserverOptions: { attributes: true, attributeFilter: ["inert"] },
+    },
+  );
 }
 
 export const MockMap = meta.story({
@@ -43,6 +48,15 @@ export const MockMap = meta.story({
 });
 
 export const SelectPlanet = meta.story({
+  beforeEach: () => {
+    // Selection tests the settled map; MockMap covers the animated arrival.
+    const { matchMedia } = window;
+    window.matchMedia = (query) =>
+      matchMedia.call(window, query.replace("(prefers-reduced-motion: reduce)", "all"));
+    return () => {
+      window.matchMedia = matchMedia;
+    };
+  },
   play: async ({ canvas, userEvent }) => {
     await arrived(canvas);
     await userEvent.click(canvas.getByRole("button", { name: "Replication, Charted" }));

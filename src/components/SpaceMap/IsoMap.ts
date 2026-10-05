@@ -188,6 +188,7 @@ export class IsoMap {
   private w = 0;
   private h = 0;
   private raf = 0;
+  private dirty = true;
 
   constructor(el: HTMLElement, options: IsoMapOptions) {
     // The shaders write sRGB greys directly, as the prototype did on three r149.
@@ -226,6 +227,7 @@ export class IsoMap {
   }
 
   attachLabel(id: string, label: HTMLElement | null) {
+    this.dirty = true;
     const p = this.N[this.ix.get(id) ?? -1];
     if (!p) return;
     p.label = label;
@@ -234,10 +236,12 @@ export class IsoMap {
   }
 
   attachSectorLabel(index: number, label: HTMLElement | null) {
+    this.dirty = true;
     if (index < this.sectorLabels.length) this.sectorLabels[index] = label;
   }
 
   setStatus(statuses: Record<string, PlanetStatus>, selectedId: string | null) {
+    this.dirty = true;
     this.wanted = statuses;
     this.sel = selectedId == null ? -1 : (this.ix.get(selectedId) ?? -1);
     this.apply();
@@ -248,6 +252,7 @@ export class IsoMap {
    * status as the front passes it, so a growing front reveals the map from The Craft outwards.
    */
   setRevealFront(radius: number) {
+    this.dirty = true;
     this.front = radius;
     if (this.st) this.apply();
   }
@@ -284,6 +289,7 @@ export class IsoMap {
 
   /** Scales every planet, with the links docked to them. */
   setPlanetScale(k: number) {
+    this.dirty = true;
     this.Rad = this.baseRad.map((r) => r * k);
     this.N.forEach((p, i) => p.mesh.scale.setScalar(this.Rad[i]));
     for (const e of this.E) if (e.from >= 0) this.orient(e, e.from);
@@ -291,21 +297,25 @@ export class IsoMap {
 
   /** Scales how far the fog clears around a known planet. */
   setRevealScale(k: number) {
+    this.dirty = true;
     this.revealR = CFG.revealR * k;
   }
 
   /** Eases the camera towards a zoom distance, or cuts to it when `instant`. */
   setZoom(dist: number, { instant = false } = {}) {
+    this.dirty = true;
     this.goal.dist = dist;
     if (instant) this.cam.dist = dist;
   }
 
   /** Offsets the view in pixels, eased like every other camera move. */
   shake(x: number, y: number) {
+    this.dirty = true;
     this.offGoal = { x, y };
   }
 
   focus(id: string) {
+    this.dirty = true;
     const i = this.ix.get(id);
     if (i == null) return;
     this.goal.target.copy(this.P[i]);
@@ -314,6 +324,7 @@ export class IsoMap {
   }
 
   overview() {
+    this.dirty = true;
     this.goal.target.set(0, 0, 0);
     this.goal.dist = CFG.dist;
     this.offGoal = { x: 0, y: 0 };
@@ -674,6 +685,13 @@ export class IsoMap {
     const { cv } = this;
     const g = this.goal;
     const opts = { signal: this.events.signal };
+    this.reducedMotion.addEventListener(
+      "change",
+      () => {
+        this.dirty = true;
+      },
+      opts,
+    );
     cv.addEventListener("contextmenu", (e) => e.preventDefault(), opts);
     cv.addEventListener(
       "pointerdown",
@@ -687,6 +705,7 @@ export class IsoMap {
     cv.addEventListener(
       "pointermove",
       (e) => {
+        this.dirty = true;
         const [x, y] = this.local(e);
         const d = this.drag;
         if (d) {
@@ -732,6 +751,7 @@ export class IsoMap {
       "pointerleave",
       () => {
         this.hover = -1;
+        this.dirty = true;
       },
       opts,
     );
@@ -739,6 +759,7 @@ export class IsoMap {
       "wheel",
       (e) => {
         e.preventDefault();
+        this.dirty = true;
         g.dist = Math.max(CFG.dMin, Math.min(CFG.dMax, g.dist * Math.exp(e.deltaY * 0.0012)));
       },
       { ...opts, passive: false },
@@ -756,6 +777,9 @@ export class IsoMap {
     const w = this.el.clientWidth;
     const h = this.el.clientHeight;
     if (!w || !h || !this.st) return;
+    // A settled map needs no repeated WebGL work under reduced motion.
+    if (still && !this.dirty && w === this.w && h === this.h) return;
+    this.dirty = false;
     if (w !== this.w || h !== this.h) {
       this.w = w;
       this.h = h;
