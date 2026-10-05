@@ -5,6 +5,11 @@
 
 :root {
   interpolate-size: allow-keywords;
+  @apply dark-palette;
+}
+
+/* The space map is drawn dark in either theme, so its overlays keep the dark palette. */
+@utility dark-palette {
   color-scheme: dark;
   --background: #0a0a0a;
   --foreground: #fafafa;
