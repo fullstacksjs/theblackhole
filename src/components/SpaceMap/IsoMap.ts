@@ -157,7 +157,8 @@ export class IsoMap {
   private readonly reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   private readonly events = new AbortController();
   private readonly P: THREE.Vector3[] = [];
-  private readonly Rad: number[] = [];
+  private readonly baseRad: number[] = [];
+  private Rad: number[] = [];
   private readonly sectorPoints: THREE.Vector3[];
   private readonly sectorLabels: (HTMLElement | null)[];
   private readonly N: PlanetView[];
@@ -166,6 +167,9 @@ export class IsoMap {
   private readonly goal = { target: new THREE.Vector3(), dist: CFG.dist };
   private readonly off = { x: 0, y: 0 };
   private offGoal = { x: 0, y: 0 };
+  private revealR = CFG.revealR;
+  private front = Infinity;
+  private wanted: Record<string, PlanetStatus> = {};
   private fogU!: {
     uN: THREE.IUniform<THREE.Vector3[]>;
     uT: THREE.IUniform<number>;
@@ -234,10 +238,32 @@ export class IsoMap {
   }
 
   setStatus(statuses: Record<string, PlanetStatus>, selectedId: string | null) {
+    this.wanted = statuses;
+    this.sel = selectedId == null ? -1 : (this.ix.get(selectedId) ?? -1);
+    this.apply();
+  }
+
+  /**
+   * Keeps every planet farther than `radius` from the centre in the fog. Each one takes on its
+   * status as the front passes it, so a growing front reveals the map from The Craft outwards.
+   */
+  setRevealFront(radius: number) {
+    this.front = radius;
+    if (this.st) this.apply();
+  }
+
+  private apply() {
     const first = !this.st;
     const prev = this.st ?? {};
+    const statuses = Number.isFinite(this.front)
+      ? Object.fromEntries(
+          this.ids.map((id, i) => [
+            id,
+            this.P[i].length() <= this.front ? (this.wanted[id] ?? "uncharted") : "uncharted",
+          ]),
+        )
+      : this.wanted;
     this.st = statuses;
-    this.sel = selectedId == null ? -1 : (this.ix.get(selectedId) ?? -1);
     this.N.forEach((p, i) => {
       Object.assign(p.tgt, LOOKS[statuses[this.ids[i]] ?? "uncharted"]);
       if (first) Object.assign(p.vis, p.tgt);
@@ -254,6 +280,29 @@ export class IsoMap {
       }
       e.gTgt = active ? 1 : 0;
     }
+  }
+
+  /** Scales every planet, with the links docked to them. */
+  setPlanetScale(k: number) {
+    this.Rad = this.baseRad.map((r) => r * k);
+    this.N.forEach((p, i) => p.mesh.scale.setScalar(this.Rad[i]));
+    for (const e of this.E) if (e.from >= 0) this.orient(e, e.from);
+  }
+
+  /** Scales how far the fog clears around a known planet. */
+  setRevealScale(k: number) {
+    this.revealR = CFG.revealR * k;
+  }
+
+  /** Eases the camera towards a zoom distance, or cuts to it when `instant`. */
+  setZoom(dist: number, { instant = false } = {}) {
+    this.goal.dist = dist;
+    if (instant) this.cam.dist = dist;
+  }
+
+  /** Offsets the view in pixels, eased like every other camera move. */
+  shake(x: number, y: number) {
+    this.offGoal = { x, y };
   }
 
   focus(id: string) {
@@ -300,10 +349,11 @@ export class IsoMap {
         p.set(Math.cos(ang) * rad, 0, Math.sin(ang) * rad);
       }
       this.P.push(p);
-      this.Rad.push(
+      this.baseRad.push(
         n.tier === 0 ? 0.3 : n.tier === 1 ? 0.17 : n.tier === 4 ? 0.23 : 0.1 + r() * 0.05,
       );
     }
+    this.Rad = [...this.baseRad];
   }
 
   private planets(): PlanetView[] {
@@ -570,7 +620,7 @@ export class IsoMap {
       U.uN.value[i].set(
         this.P[i].x,
         this.P[i].z,
-        p.vis.f > 0.01 ? this.Rad[i] + CFG.revealR * p.vis.f : 0,
+        p.vis.f > 0.01 ? this.Rad[i] + this.revealR * p.vis.f : 0,
       ),
     );
   }

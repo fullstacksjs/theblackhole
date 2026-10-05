@@ -1,4 +1,4 @@
-import { expect, within } from "storybook/test";
+import { expect, waitFor, within } from "storybook/test";
 
 import preview from "#storybook/preview";
 
@@ -12,8 +12,21 @@ const meta = preview.meta({
   args: mockMap,
 });
 
+/**
+ * Every load reveals the map out of the fog, and planets stay out of reach until the reveal has
+ * swept past them. Under reduced motion the map appears at once.
+ */
+async function arrived(canvas: ReturnType<typeof within>) {
+  const replication = canvas.getByRole("button", { name: "Replication, Charted" });
+  await waitFor(() => expect(replication.parentElement).not.toHaveAttribute("inert"), {
+    timeout: 5000,
+  });
+  await expect(replication).toBeVisible();
+}
+
 export const MockMap = meta.story({
   play: async ({ canvas }) => {
+    await arrived(canvas);
     const countOf = (label: string) => within(canvas.getByText(label).closest("div")!);
     await expect(countOf("Charted").getByText("1")).toBeVisible();
     await expect(countOf("In reach").getByText("1")).toBeVisible();
@@ -29,6 +42,7 @@ export const MockMap = meta.story({
 
 export const SelectPlanet = meta.story({
   play: async ({ canvas, userEvent }) => {
+    await arrived(canvas);
     await userEvent.click(canvas.getByRole("button", { name: "Replication, Charted" }));
     const panel = canvas.getByRole("region", { name: "Replication" });
     await expect(panel).toHaveTextContent("Linked to The Craft");
