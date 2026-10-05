@@ -9,6 +9,13 @@ They use the general design system through `#ui`.
   layout. Import it and its prop types from `#components/PlanetPanel/PlanetPanel.tsx`.
   Its stylesheet lives beside the component and loads when the component is used.
 
+- `SpaceMap` mounts the isometric WebGL renderer (`IsoMap`, built on `three`)
+  and renders the planet and sector labels it positions. Planet labels are
+  buttons, so planets can be selected from the keyboard.
+- `MapScreen` composes the map, sector progress, map counts, and the planet
+  panel. The index route renders it with `mock-map.ts`, The Craft and three
+  concepts, until the personal map is loaded from Convex.
+
 The planet panel stories include recall, learning opportunities, correctness
 results, and unavailable grading. The answer-validation story demonstrates
 react-hook-form with a Valibot resolver, blank-answer rejection, focus on the
