@@ -18,10 +18,9 @@ They use the general design system through `#ui`.
 - `SignInScreen` is the sign-in route: the fogged field, with no personal map
   yet, and a panel that starts GitHub sign-in.
 - Every time the map loads, `SpaceMap` starts fully fogged and plays
-  `arrival.ts`: The Craft collapses into being with a flash and a shockwave,
-  and a reveal front sweeps the fog away from it to show the map as it stands.
-  Planets cannot be selected until it ends. Under reduced motion the map
-  appears at once.
+  `arrival.ts`: the camera zooms in as a point of light forms at The Craft,
+  then stays close while a wave clears the fog outwards over 2.4 seconds. Planets cannot be selected until it ends. Learners
+  can skip the intro. Under reduced motion the map appears at once.
 
 The planet panel stories include recall, learning opportunities, correctness
 results, and unavailable grading. The answer-validation story demonstrates

@@ -4,9 +4,9 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 import type { Link, PlanetStatus } from "#domain/map.ts";
 
-import { Text } from "#ui";
+import { Button, Text } from "#ui";
 
-import { arrive, type ArrivalOverlays } from "./arrival";
+import { arrive, settleArrival, type ArrivalOverlays } from "./arrival";
 import { IsoMap, type IsoMapPlanet } from "./IsoMap";
 
 export interface SpaceMapPlanet extends IsoMapPlanet {
@@ -49,6 +49,7 @@ export function SpaceMap({
   className,
 }: SpaceMapProps) {
   const stageRef = useRef<HTMLDivElement>(null);
+  const stopArrival = useRef<(() => void) | undefined>(undefined);
   const mapRef = useRef<IsoMap | null>(null);
   const labels = useRef(new Map<string, HTMLElement>());
   const sectorLabels = useRef(new Map<number, HTMLElement>());
@@ -56,6 +57,7 @@ export function SpaceMap({
   // Every load starts fully fogged and reveals the map from The Craft outwards.
   const [arriving, setArriving] = useState(true);
   const arrivingRef = useRef(true);
+  const previousSelection = useRef<string | null>(null);
   const pick = useEffectEvent(onPick);
   const sectorCount = sectors.length;
 
@@ -77,8 +79,10 @@ export function SpaceMap({
           setArriving(false);
         })
       : undefined;
+    stopArrival.current = stop;
     return () => {
       stop?.();
+      stopArrival.current = undefined;
       mapRef.current = null;
       map.dispose();
     };
@@ -90,30 +94,34 @@ export function SpaceMap({
 
   useEffect(() => {
     if (selectedId) mapRef.current?.focus(selectedId);
-    else mapRef.current?.overview();
+    else if (previousSelection.current) mapRef.current?.overview();
+    previousSelection.current = selectedId;
   }, [selectedId]);
 
+  const skipArrival = () => {
+    stopArrival.current?.();
+    if (mapRef.current) settleArrival(mapRef.current, overlays.current);
+    arrivingRef.current = false;
+    setArriving(false);
+  };
+
   return (
-    <div className={cn("relative overflow-hidden bg-background", className)}>
-      <div ref={stageRef} aria-hidden="true" className="absolute inset-0" />
+    <div aria-busy={arriving} className={cn("relative overflow-hidden bg-background", className)}>
+      <div ref={stageRef} inert={arriving} aria-hidden="true" className="absolute inset-0" />
       {arriving && (
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div
-            ref={(el) => void (overlays.current.pulse = el)}
-            className="arrival-pulse absolute top-1/2 left-1/2 -translate-1/2 rounded-full opacity-0"
+          <ArrivalEffects
+            attach={(key, el) => {
+              overlays.current[key] = el;
+            }}
           />
-          <div
-            ref={(el) => void (overlays.current.flash = el)}
-            className="arrival-flash absolute inset-0 opacity-0"
-          />
-          <div
-            ref={(el) => void (overlays.current.ring = el)}
-            className="arrival-ring absolute top-1/2 left-1/2 -translate-1/2 rounded-full border border-foreground opacity-0"
-          />
-          <div
-            ref={(el) => void (overlays.current.echo = el)}
-            className="arrival-ring absolute top-1/2 left-1/2 -translate-1/2 rounded-full border border-divider opacity-0"
-          />
+        </div>
+      )}
+      {arriving && (
+        <div className="absolute right-6 bottom-16 z-10 md:right-8 md:bottom-7">
+          <Button size="small" variant="quiet" onClick={skipArrival}>
+            Skip intro
+          </Button>
         </div>
       )}
       <div inert={arriving} className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -176,5 +184,29 @@ export function SpaceMap({
         })}
       </div>
     </div>
+  );
+}
+
+function ArrivalEffects({
+  attach,
+}: {
+  attach: (key: keyof ArrivalOverlays, element: HTMLDivElement | null) => void;
+}) {
+  return (
+    <>
+      <div
+        ref={(el) => attach("pulse", el)}
+        className="arrival-pulse absolute top-1/2 left-1/2 -translate-1/2 rounded-full opacity-0"
+      />
+      <div ref={(el) => attach("flash", el)} className="arrival-flash absolute inset-0 opacity-0" />
+      <div
+        ref={(el) => attach("ring", el)}
+        className="arrival-ring absolute top-1/2 left-1/2 -translate-1/2 rounded-full border border-foreground opacity-0"
+      />
+      <div
+        ref={(el) => attach("echo", el)}
+        className="arrival-ring absolute top-1/2 left-1/2 -translate-1/2 rounded-full border border-divider opacity-0"
+      />
+    </>
   );
 }
