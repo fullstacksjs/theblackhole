@@ -13,7 +13,12 @@ import { playwright } from "vite-plus/test/browser-playwright";
 const dirname =
   typeof __dirname !== "undefined" ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
-const ignorePatterns = [".design-sync/**", "convex/_generated/**", "src/routeTree.gen.ts"];
+const ignorePatterns = [
+  ".design-sync/**",
+  ".scratch/**",
+  "convex/_generated/**",
+  "src/routeTree.gen.ts",
+];
 const serviceWorkerTemplate = readFileSync(path.join(dirname, "src/sw.js"), "utf8");
 
 function serviceWorker() {

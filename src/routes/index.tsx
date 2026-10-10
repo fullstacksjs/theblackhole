@@ -1,7 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { MapScreen } from "#components/MapScreen/MapScreen.tsx";
-import { mockMap } from "#components/MapScreen/mock-map.ts";
+import { PersonalMapScreen } from "#components/MapScreen/PersonalMapScreen.tsx";
 
 export const Route = createFileRoute("/")({
   beforeLoad: ({ context, location }) => {
@@ -10,5 +9,5 @@ export const Route = createFileRoute("/")({
     }
     throw redirect({ to: "/sign-in", search: { redirectTo: location.href } });
   },
-  component: () => <MapScreen {...mockMap} />,
+  component: PersonalMapScreen,
 });

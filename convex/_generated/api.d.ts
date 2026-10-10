@@ -10,6 +10,8 @@
 
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
+import type * as mapValidators from "../mapValidators.js";
+import type * as personalMap from "../personalMap.js";
 
 import type {
   ApiFromModules,
@@ -20,6 +22,8 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   http: typeof http;
+  mapValidators: typeof mapValidators;
+  personalMap: typeof personalMap;
 }>;
 
 /**

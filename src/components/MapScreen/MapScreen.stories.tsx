@@ -1,5 +1,7 @@
 import { expect, waitFor, within } from "storybook/test";
 
+import { explainPersonalMap } from "#domain/personal-map";
+import { DAY_MS } from "#domain/retention";
 import preview from "#storybook/preview";
 
 import { MapScreen } from "./MapScreen";
@@ -88,5 +90,48 @@ export const SkipArrival = meta.story({
     await arrived(canvas);
     await userEvent.click(canvas.getByRole("button", { name: "The Craft, Permanent anchor" }));
     await expect(canvas.getByRole("region", { name: "The Craft" })).toBeVisible();
+  },
+});
+
+export const DepletedPartition = meta.story({
+  args: {
+    retention: explainPersonalMap(
+      {
+        conceptIds: mockMap.planets.filter(({ id }) => id !== mockMap.anchorId).map(({ id }) => id),
+        links: mockMap.links,
+      },
+      [
+        { conceptId: "replication", retentionXP: 40, checkpointAt: 0, reviewBaselineXP: 40 },
+        { conceptId: "idempotency", retentionXP: 80, checkpointAt: 0, reviewBaselineXP: 80 },
+      ],
+      2 * DAY_MS,
+    ).retention,
+  },
+  beforeEach: () => {
+    const { matchMedia } = window;
+    window.matchMedia = (query) =>
+      matchMedia.call(window, query.replace("(prefers-reduced-motion: reduce)", "all"));
+    return () => {
+      window.matchMedia = matchMedia;
+    };
+  },
+  play: async ({ canvas, userEvent }) => {
+    const depleted = canvas.getByRole("button", { name: "Replication, Fading" });
+    await expect(depleted).toBeVisible();
+    await expect(canvas.getByRole("button", { name: "Idempotency, Charted" })).toBeVisible();
+    await userEvent.click(depleted);
+    await expect(await canvas.findByRole("region", { name: "Replication" })).toBeVisible();
+    await expect(canvas.getByRole("progressbar", { name: "Distributed systems" })).toHaveAttribute(
+      "value",
+      "2",
+    );
+    await userEvent.click(canvas.getByRole("button", { name: "Close" }));
+    await waitFor(async () => {
+      await expect(canvas.getByRole("button", { name: "Exactly-once, In reach" })).toBeVisible();
+    });
+    await userEvent.click(canvas.getByRole("button", { name: "Exactly-once, In reach" }));
+    await expect(await canvas.findByRole("region", { name: "Exactly-once" })).toHaveTextContent(
+      "In reach via Idempotency",
+    );
   },
 });

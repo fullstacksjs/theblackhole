@@ -21,11 +21,12 @@ export function derivePlanetStatuses({
   links,
   retention,
 }: MapProgress): Record<string, PlanetStatus> {
-  const active = (id: string) => id === anchorId || (retention[id] ?? 0) > 0;
-  const statuses: Record<string, PlanetStatus> = {};
+  const active = (id: string) =>
+    id === anchorId || (Object.hasOwn(retention, id) && retention[id] > 0);
+  const statuses: Record<string, PlanetStatus> = Object.create(null);
   for (const id of planetIds) {
     if (id === anchorId) statuses[id] = "anchor";
-    else if (id in retention) statuses[id] = active(id) ? "charted" : "fading";
+    else if (Object.hasOwn(retention, id)) statuses[id] = active(id) ? "charted" : "fading";
     else statuses[id] = neighborsOf(id, links).some(active) ? "in-reach" : "uncharted";
   }
   return statuses;
