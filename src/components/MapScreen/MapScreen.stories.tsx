@@ -59,6 +59,7 @@ export const SelectPlanet = meta.story({
   },
   play: async ({ canvas, userEvent }) => {
     await arrived(canvas);
+    await expect(canvas.queryByRole("button", { name: "Skip intro" })).not.toBeInTheDocument();
     await userEvent.click(canvas.getByRole("button", { name: "Replication, Charted" }));
     const panel = await canvas.findByRole("region", { name: "Replication" });
     await expect(panel).toHaveTextContent("Linked to The Craft");
@@ -71,5 +72,21 @@ export const SelectPlanet = meta.story({
 
     await userEvent.keyboard("{Escape}");
     await expect(canvas.queryByRole("region")).not.toBeInTheDocument();
+  },
+});
+
+export const SkipArrival = meta.story({
+  play: async ({ canvas, userEvent }) => {
+    // Chromatic uses reduced motion, where there is no intro to skip.
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const skip = canvas.getByRole("button", { name: "Skip intro" });
+      const craft = canvas.getByRole("button", { name: "The Craft, Permanent anchor" });
+      await expect(craft.parentElement).toHaveAttribute("inert");
+      await userEvent.click(skip);
+      await expect(canvas.queryByRole("button", { name: "Skip intro" })).not.toBeInTheDocument();
+    }
+    await arrived(canvas);
+    await userEvent.click(canvas.getByRole("button", { name: "The Craft, Permanent anchor" }));
+    await expect(canvas.getByRole("region", { name: "The Craft" })).toBeVisible();
   },
 });
