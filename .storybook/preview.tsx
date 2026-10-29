@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import "../src/styles.css";
 import a11y from "@storybook/addon-a11y";
 import { definePreview } from "@storybook/tanstack-react";

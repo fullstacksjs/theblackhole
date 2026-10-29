@@ -7,7 +7,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { defineConfig } from "vite-plus";
+import { defineConfig, type Plugin } from "vite-plus";
 import { playwright } from "vite-plus/test/browser-playwright";
 
 const dirname =
@@ -21,7 +21,7 @@ const ignorePatterns = [
 ];
 const serviceWorkerTemplate = readFileSync(path.join(dirname, "src/sw.js"), "utf8");
 
-function serviceWorker() {
+function serviceWorker(): Plugin {
   return {
     name: "app-service-worker",
     apply: "build" as const,

@@ -1,7 +1,7 @@
 import "./SignInScreen.css";
 import { useEffect, useId, useRef, useState } from "react";
 
-import type { Link, PlanetStatus } from "#domain/map.ts";
+import type { Link } from "#domain/map.ts";
 
 import { Button, Stat, StatusIndicator, Text } from "#ui";
 
@@ -28,10 +28,7 @@ export function SignInScreen({ sectors, anchorId, planets, links, onSignIn }: Si
   // Before sign-in there is no personal map: the whole field stays fogged.
   useEffect(() => {
     const map = new IsoMap(stageRef.current!, { planets, links, sectorCount, onPick: () => {} });
-    map.setStatus(
-      Object.fromEntries(planets.map((p) => [p.id, "uncharted" as PlanetStatus])),
-      null,
-    );
+    map.setStatus(Object.fromEntries(planets.map((p) => [p.id, "uncharted"])), null);
     map.setZoom(FIELD_DISTANCE, { instant: true });
     return () => map.dispose();
   }, [planets, links, sectorCount]);

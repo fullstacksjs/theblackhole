@@ -44,9 +44,11 @@ describe("persisted personal maps", () => {
     await t.mutation(internal.personalMap.initialLearning, { learnerId: alice, conceptId: "a" });
     await t.mutation(internal.personalMap.initialLearning, { learnerId: alice, conceptId: "b" });
     await t.mutation(internal.personalMap.initialLearning, { learnerId: bob, conceptId: "a" });
-    vi.setSystemTime(2 * DAY_MS);
+    // Convex advances its commit clock even while fake timers are frozen.
+    // Inspect just after the transactions rather than at their clock boundary.
+    vi.setSystemTime(3 * DAY_MS);
     const inspect = (learnerId: typeof alice) =>
-      t.query(internal.personalMap.inspect, { learnerId, evaluationAt: 2 * DAY_MS });
+      t.query(internal.personalMap.inspect, { learnerId, evaluationAt: 3 * DAY_MS + 1000 });
     const bobBefore = await inspect(bob);
     const aliceBefore = await inspect(alice);
     expect(aliceBefore.explanation.statuses).toMatchObject({ a: "fading", b: "fading" });
@@ -134,26 +136,28 @@ describe("persisted personal maps", () => {
     const { t, alice } = await setup();
     await t.mutation(internal.personalMap.initialLearning, { learnerId: alice, conceptId: "a" });
     const storedBefore = await t.run((ctx) => ctx.db.query("learnedPlanets").collect());
+    // Start elapsed time at the actual commit-clock checkpoint.
+    const origin = storedBefore[0].checkpointAt;
     const inspect = (evaluationAt: number) =>
       t.query(internal.personalMap.inspect, { learnerId: alice, evaluationAt });
-    const direct = await inspect(2 * DAY_MS);
+    const direct = await inspect(origin + 2 * DAY_MS);
     await expect(t.run((ctx) => ctx.db.query("learnedPlanets").collect())).resolves.toEqual(
       storedBefore,
     );
-    vi.setSystemTime(DAY_MS);
+    vi.setSystemTime(origin + DAY_MS);
     await t.mutation(internal.personalMap.checkpoint, { learnerId: alice, conceptId: "a" });
-    const rebased = await inspect(2 * DAY_MS);
+    const rebased = await inspect(origin + 2 * DAY_MS);
     expect(rebased.explanation.statuses).toEqual(direct.explanation.statuses);
     expect(rebased.explanation.relationships).toEqual(direct.explanation.relationships);
     expect(rebased.progress[0]).toMatchObject({
       retentionXP: 20,
       reviewBaselineXP: 40,
-      checkpointAt: DAY_MS,
+      checkpointAt: origin + DAY_MS,
     });
     await expect(inspect(0)).rejects.toThrow("predates");
-    vi.setSystemTime(2 * DAY_MS);
+    vi.setSystemTime(origin + 2 * DAY_MS);
     await t.mutation(internal.personalMap.checkpoint, { learnerId: alice, conceptId: "a" });
-    expect((await inspect(2 * DAY_MS)).progress[0]).toMatchObject({
+    expect((await inspect(origin + 2 * DAY_MS)).progress[0]).toMatchObject({
       retentionXP: 0,
       reviewBaselineXP: 40,
     });
