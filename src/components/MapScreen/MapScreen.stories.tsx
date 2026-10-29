@@ -18,12 +18,12 @@ const meta = preview.meta({
  * Every load reveals the map out of the fog, and planets stay out of reach until the reveal has
  * swept past them. Under reduced motion the map appears at once.
  */
-async function arrived(canvas: ReturnType<typeof within>) {
-  const replication = canvas.getByRole("button", { name: "Replication, Charted" });
+async function arrived(canvas: ReturnType<typeof within>, planetName = "Replication, Charted") {
+  const planet = canvas.getByRole("button", { name: planetName });
   await waitFor(
     async () => {
-      await expect(replication.parentElement).not.toHaveAttribute("inert");
-      await expect(replication).toBeVisible();
+      await expect(planet.parentElement).not.toHaveAttribute("inert");
+      await expect(planet).toBeVisible();
     },
     {
       timeout: 5000,
@@ -116,6 +116,8 @@ export const DepletedPartition = meta.story({
     };
   },
   play: async ({ canvas, userEvent }) => {
+    // Reduced motion skips the intro, but labels still wait for the first WebGL frame.
+    await arrived(canvas, "Replication, Fading");
     const depleted = canvas.getByRole("button", { name: "Replication, Fading" });
     await expect(depleted).toBeVisible();
     await expect(canvas.getByRole("button", { name: "Idempotency, Charted" })).toBeVisible();
